@@ -7,8 +7,10 @@ const models = require('./models/models');
 const cors = require('cors');
 const router = require('./routes/index')
 const errorHandler = require('./middleware/ErrorHandlingMiddleware');
-const fileUpload = require('express-fileupload')
-
+const fileUpload = require('express-fileupload');
+const MarkUpController = require('./controllersNew/markUpController');
+const DiscountController = require('./controllersNew/discountController');
+const DiscountCardController = require('./controllersNew/discountCardController')
 
 const app = express()
 app.use(cors());
@@ -24,27 +26,40 @@ app.use(errorHandler)
 const fs = require('fs');
 
 app.get('/', (req, res) => {
-    fs.readFile('./views/index.html', (err, data) => {
-      if (err) {
-        res.statusCode = 500;
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.end('Помилка сервера.');
-      } else {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end(data);
-      }
-    });
+  fs.readFile('./views/index.html', (err, data) => {
+    if (err) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.end('Помилка сервера.');
+    } else {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.end(data);
+    }
   });
+});
 
 const start = async () => {
-    try {
-        await sequelize.authenticate()
-        await sequelize.sync()
-        app.listen(PORT, () => console.log(`My server started on port ${PORT}`))
-    } catch (e) {
-        console.log('ПОЛИЛКА!!! ЕРОР!!!!!' + e)
+  try {
+    await sequelize.authenticate()
+    await sequelize.sync()
+    const markup = await MarkUpController.checkAndCreateDefaultMarkUp()
+    const discount = await DiscountController.checkAndCreateDefaultDiscount()
+    const discountCard = await DiscountCardController.checkAndCreateDefaultDiscountCard()
+    if (!discount) {
+      console.error('Сталася помилка при створенні розмітки за замовчуванням')
     }
+    if (!discountCard){
+      console.error('Сталася помилка при створенні розмітки за замовчуванням')
+    }
+    if (markup) {
+      app.listen(PORT, () => console.log(`My server started on port ${PORT}`))
+    } else {
+      console.error('Сталася помилка при створенні розмітки за замовчуванням')
+    }
+  } catch (e) {
+    console.log('ПОЛИЛКА!!! EROR!!!!!' + e)
+  }
 }
 
 start()
